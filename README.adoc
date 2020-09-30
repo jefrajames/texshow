@@ -1,0 +1,224 @@
+
+= GraphQL demo for Worldline TexShow 2020
+
+A demo based on https://github.com/eclipse/microprofile-graphql[MicroProfile GraphQL].
+
+Based on 2 business services:
+
+. **Merchant Contrat**: provides data and operations on Merchant Acquiring Contracts,
+. **Payment Scoring**: provide business metrics about the payment activity of each merchant. This service must be enabled at the contract level.
+
+These services are exposed with REST and GarphQL APIs;
+SwaggerUI and GraphiQL are enables to play with these APIs.
+
+== Technical environment
+
+This project has been developed with:
+
+* Maven 3.6.3
+* OpenJDK 11.0.7
+* Quarkus 1.8.1.Final
+
+== A few words about the programming model
+
+* The code is based on Quarkus and MicroProfile
+* A central configuration file is used: _application.properties_
+* The code is structured according to the https://en.wikipedia.org/wiki/Entity-control-boundary[ECB] (Entity Control Boundary) pattern
+* Quarkus ORM Panache is used to facilitate JPA
+* The code has been extremely simplified to focus on some basic principles
+* Very bad practise: for the sake of simplicity, no tests are provided. Please don't do that in real life!
+
+== How to
+
+=== Running Quarkus in Java mode
+
+This demo is based on a runable Jar.
+
+To generate a runnable Jar file: 
+[source,]
+----
+mvn package
+----
+
+To run the Jar file: 
+[source,]
+----
+java -jar target/texshow-1.0-runner.jar
+----
+
+=== Running Quarkus in native mode
+
+Not yet tested.
+
+== Using SwaggerUI
+
+SwaggerUI enables to play around with the REST API and is availablze at http://localhost:8080/swagger-ui/
+
+== Using GraphiQL
+
+GraphiQL enables to play around with the GraphQL API.
+and is available at http://localhost:8080/graphql-ui/
+
+== GraphQL examples
+
+These examples can be run with GraphiQL.
+
+=== Demo1
+
+This example illustrates how to read the needed data and avoid over-fetching:
+[source,JSON]
+----
+query demo1 {
+  merchant(merchantId: 1) {
+    brandName
+    activity
+    contacts {
+      emailAddresses
+    }
+  }
+}
+----
+
+=== Demo2
+
+Same with a list:
+[source,JSON]
+----
+query demo2 {
+  allMerchants {
+    brandName
+    activity
+    contacts {
+      emailAddresses
+    }
+  }
+}
+----
+
+=== Demo3
+[source]
+To get the schema description:
+
+----
+curl http://localhost:8080/graphql/schema.graphql
+----
+
+Schema introspection:
+[source,JSON]
+----
+query demo3 {
+  __schema {
+    queryType {
+      name
+      fields {
+        name
+        description
+      }
+    }
+    mutationType {
+      name 
+      fields {
+        name
+        description
+      }
+    }
+  }
+}
+
+----
+
+=== Demo4
+
+Multiple operations:
+[source,JSON]
+----
+query demo4 {
+  merchant1:merchant(merchantId:1){
+    brandName
+    activity
+    activityLevel
+  }
+  merchant2:merchant(merchantId:2){
+    brandName
+  }
+}
+----
+
+=== Demo5
+
+Aggregating services:
+[source,JSON]
+----
+query demo5 {
+  merchant(merchantId:1) {
+    brandName
+    scores {
+      name
+      value
+    }
+  }
+}
+----
+
+== Demo6 
+
+Partial results:
+[source,JSON]
+----
+query demo6 {
+  merchant(merchantId: 1) {
+    brandName
+    contacts {
+      emailAddresses
+    }
+    errorOnScores {
+      name
+    }
+  }
+}
+----
+
+=== Demo7
+
+Mutation, creating a Merchant:
+[source,JSON]
+----
+mutation demo7 {
+  createMerchant(merchant :
+    {
+      brandName: "TexShow"
+      activity: ELECTRONIC
+      activityLevel: HIGH
+      cardSchemes: [AMEX, CB]
+    }
+  ){
+    id
+    brandName
+    activity
+    cardSchemes
+  }
+}
+----
+
+Mutation, deleting a Merchant:
+[source,JSON]
+----
+mutation demo8 {
+  deleteMerchant(merchantId:6)   
+}
+----
+
+=== Demo8
+Getting Quarkus GraphQL metrics, to be run in a terminal:
+[source,shell]
+----
+curl http://localhost:8080/metrics/vendor | grep graphql
+----
+
+== Not yet included in this demo
+
+* Integration with BeanValidation
+* Declarative security using @RolesAllowed
+* Custom metrics
+* Distributed tracing with OpenTracing
+* Generate a native image.
